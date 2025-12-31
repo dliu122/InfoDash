@@ -400,13 +400,15 @@ initializeDailySummary();
 // Automated Summary Generation System
 class AutomatedSummaryGenerator {
     getBaseUrl() {
-        if (process.env.NODE_ENV === 'production') {
-            // Use the actual production URL or detect it
-            return process.env.BASE_URL || 'https://infodash.app';
-        } else {
-            return `http://localhost:${port}`;
+        // Browser: use same-origin (CloudFront-safe)
+        if (typeof window !== 'undefined') {
+            return '';
         }
+
+        // Server-side (Node): talk to itself directly
+        return 'http://127.0.0.1:3000';
     }
+
 
     constructor() {
         this.isGenerating = false;
