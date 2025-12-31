@@ -2006,6 +2006,6 @@ app.use((req, res) => {
     res.status(404).send('404 Not Found');
 });
 
-app.listen(port, () => {
-    // console.log(`Server is running on port ${port}`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server is running on port ${port} and accessible via public IP`);
 });
