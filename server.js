@@ -69,6 +69,20 @@ function isCacheStale(timestamp) {
 const app = express();
 const port = process.env.PORT || 3000;
 
+//Cloudfront proxy trust
+app.set('trust proxy', true);
+
+// Detect CloudFront HTTPS termination
+app.use((req, res, next) => {
+    // CloudFront sends these headers when handling HTTPS
+    if (req.headers['cloudfront-forwarded-proto'] === 'https' || 
+        req.headers['x-forwarded-proto'] === 'https') {
+        req.secure = true;
+        req.protocol = 'https';
+    }
+    next();
+});
+
 // Middleware to parse JSON requests
 app.use(express.json());
 
