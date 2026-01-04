@@ -1740,7 +1740,9 @@ app.post('/api/news/clear-cache', async (req, res) => {
     }
 });
 
-// --- NEW ROBUST BULK FINANCE ENDPOINT ---
+// Add at the top with other caches
+const financeCache = new NodeCache({ stdTTL: 60, checkperiod: 120 }); // 1 minute cache
+
 app.post('/api/finance/bulk-real-time', async (req, res) => {
     const { symbols } = req.body;
 
@@ -1750,27 +1752,53 @@ app.post('/api/finance/bulk-real-time', async (req, res) => {
 
     try {
         const results = {};
-        const promises = symbols.map(async (symbol) => {
-            try {
-                const quote = await yahooFinance.quote(symbol);
-                if (quote) {
-                    results[symbol] = {
-                        price: quote.regularMarketPrice,
-                        change: quote.regularMarketChange,
-                        changePercent: quote.regularMarketChangePercent,
-                        symbol: quote.symbol,
-                        name: quote.shortName || quote.longName || symbol,
-                    };
-                } else {
-                    results[symbol] = { error: 'No data available' };
+        
+        // Process symbols in batches to avoid rate limiting
+        const batchSize = 5;
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        
+        for (let i = 0; i < symbols.length; i += batchSize) {
+            const batch = symbols.slice(i, i + batchSize);
+            
+            const batchPromises = batch.map(async (symbol) => {
+                try {
+                    // Check cache first
+                    const cached = financeCache.get(symbol);
+                    if (cached) {
+                        results[symbol] = cached;
+                        return;
+                    }
+                    
+                    const quote = await yahooFinance.quote(symbol);
+                    if (quote) {
+                        const data = {
+                            price: quote.regularMarketPrice,
+                            change: quote.regularMarketChange,
+                            changePercent: quote.regularMarketChangePercent,
+                            symbol: quote.symbol,
+                            name: quote.shortName || quote.longName || symbol,
+                        };
+                        
+                        // Cache the result
+                        financeCache.set(symbol, data);
+                        results[symbol] = data;
+                    } else {
+                        results[symbol] = { error: 'No data available' };
+                    }
+                } catch (error) {
+                    console.error(`Error fetching bulk data for symbol: ${symbol}`, error.message);
+                    results[symbol] = { error: 'Failed to fetch' };
                 }
-            } catch (error) {
-                console.error(`Error fetching bulk data for symbol: ${symbol}`, error.message);
-                results[symbol] = { error: 'Failed to fetch' };
-            }
-        });
+            });
 
-        await Promise.all(promises);
+            await Promise.all(batchPromises);
+            
+            // Add delay between batches (except for the last batch)
+            if (i + batchSize < symbols.length) {
+                await delay(500); // 500ms delay between batches
+            }
+        }
+        
         res.json(results);
     } catch (error) {
         console.error('Error fetching bulk real-time data:', error);
@@ -1778,33 +1806,41 @@ app.post('/api/finance/bulk-real-time', async (req, res) => {
     }
 });
 
-// Get historical data for a symbol using chart() method instead of historical()
 app.get('/api/finance/history/:symbol', async (req, res) => {
     const { symbol } = req.params;
     const { period = '1mo', interval = '1d' } = req.query;
+    
+    const cacheKey = `history-${symbol}-${period}-${interval}`;
 
     try {
-        //console.log(`Fetching historical data for ${symbol} with period: ${period}, interval: ${interval}`);
+        // Check cache first
+        const cached = financeCache.get(cacheKey);
+        if (cached) {
+            console.log(`Using cached historical data for ${symbol}`);
+            return res.json(cached);
+        }
 
-        // Use chart() method with proper options instead of historical()
+        console.log(`Fetching historical data for ${symbol} with period: ${period}, interval: ${interval}`);
+
+        // Add delay before making request
+        await new Promise(resolve => setTimeout(resolve, 200));
+
         const chartData = await yahooFinance.chart(symbol, {
-            period1: getPeriodDate(period), // Calculate start date based on period
-            period2: new Date(), // End date is today
+            period1: getPeriodDate(period),
+            period2: new Date(),
             interval: interval,
             includeAdjustedClose: false
         });
 
-        // Extract the historical data from chart response
         if (!chartData || !chartData.quotes || chartData.quotes.length === 0) {
-            console.log(`No historical data found for ${symbol}`);
-            return res.json({
+            const errorResponse = {
                 success: false,
                 error: 'No historical data available for this symbol',
                 data: []
-            });
+            };
+            return res.json(errorResponse);
         }
 
-        // Transform the chart data to match the expected format
         const historicalData = chartData.quotes.map(quote => ({
             date: quote.date,
             open: quote.open,
@@ -1813,36 +1849,48 @@ app.get('/api/finance/history/:symbol', async (req, res) => {
             close: quote.close,
             volume: quote.volume
         })).filter(item => {
-            // Filter out invalid entries where all values are null
             return item.open !== null || item.high !== null || 
                    item.low !== null || item.close !== null;
         });
 
-        //console.log(`Successfully fetched ${historicalData.length} data points for ${symbol}`);
+        console.log(`Successfully fetched ${historicalData.length} data points for ${symbol}`);
 
-        res.json({
+        const response = {
             success: true,
             data: historicalData,
             symbol: symbol,
             period: period,
             interval: interval
-        });
+        };
+        
+        // Cache the result (longer TTL for historical data - 5 minutes)
+        financeCache.set(cacheKey, response, 300);
+
+        res.json(response);
 
     } catch (error) {
-        console.error(`Error fetching historical data for ${symbol}:`, error);
+        console.error(`Error fetching historical data for ${symbol}:`, error.message);
         
-        // Provide more specific error messages based on the error type
+        // Check if it's a rate limit error
+        if (error.message && error.message.includes('Too Many Requests')) {
+            return res.status(429).json({ 
+                success: false, 
+                error: 'Rate limit exceeded. Please try again in a moment.',
+                symbol: symbol,
+                retryAfter: 60 // seconds
+            });
+        }
+        
         let errorMessage = 'Failed to fetch historical data';
         if (error.message && error.message.includes('Not Found')) {
             errorMessage = 'Symbol not found';
-        } else if (error.message && error.message.includes('rate limit')) {
-            errorMessage = 'Rate limit exceeded, please try again later';
         }
 
         res.status(500).json({ 
             success: false, 
             error: errorMessage,
-            details: error.message 
+            details: error.message,
+            symbol: symbol
         });
     }
 });
