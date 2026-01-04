@@ -4,7 +4,8 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
 const axios = require('axios');
 const googleTrends = require('google-trends-api');
-const yahooFinance = require('yahoo-finance2').default;
+const YahooFinance = require('yahoo-finance2').default;
+const yahooFinance = new YahooFinance({});
 const NodeCache = require('node-cache');
 const newsCache = new NodeCache({ stdTTL: 43200, checkperiod: 14400 }); 
 // Cache with TTL of 12 hours (43200 seconds)
@@ -1828,8 +1829,7 @@ app.get('/api/finance/history/:symbol', async (req, res) => {
         const chartData = await yahooFinance.chart(symbol, {
             period1: getPeriodDate(period),
             period2: new Date(),
-            interval: interval,
-            includeAdjustedClose: false
+            interval: interval,        
         });
 
         if (!chartData || !chartData.quotes || chartData.quotes.length === 0) {

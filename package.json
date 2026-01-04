@@ -19,7 +19,7 @@
     "node-cron": "^4.2.1",
     "openai": "^4.20.1",
     "weather-js": "^2.0.0",
-    "yahoo-finance2": "^2.3.10"
+    "yahoo-finance2": "^3.11.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
