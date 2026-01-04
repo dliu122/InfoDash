@@ -1108,4 +1108,6 @@ window.loadWatchlistFromPreferences = loadWatchlistFromPreferences;
 window.updateWatchlistUI = updateWatchlistUI;
 window.addCurrentSymbolToWatchlist = addCurrentSymbolToWatchlist;
 window.resetToAutoMode = resetToAutoMode;
+window.validateStockSymbol = validateStockSymbol;
+
 
