@@ -63,9 +63,9 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="chat.html" class="nav-link">
+                            <a href="chat.html" class="nav-link active">
                                 <i class="fa-solid fa-comment"></i>
-                                    <span>Chat</span>
+                                <span>Chat</span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -116,9 +116,9 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="chat.html" class="nav-link">
+                        <a href="chat.html" class="nav-link active">
                             <i class="fa-solid fa-comment"></i>
-                                <span>Chat</span>
+                            <span>Chat</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -128,7 +128,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="user.html" class="nav-link active">
+                        <a href="user.html" class="nav-link">
                             <i class="fa-solid fa-wrench"></i>
                             <span>User</span>
                         </a>
@@ -153,7 +153,7 @@
             <!-- Top Header -->
             <header class="top-header">
                 <div class="header-left">
-                    <h4 class="page-title">Summary</h4>
+                    <h4 class="page-title">Chat</h4>
                 </div>
                 <div class="header-right">
                     <!-- Weather Display -->
@@ -165,87 +165,37 @@
                     <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">🌓</button>
                 </div>
             </header>
-            
-        <!-- User Preferences Section -->
-        <div class="row">
+            <div class="summary-container">
+            <!-- Chat -->
             <div class="col s12">
-                <section id="preferences" class="section">
+                <section id="chat" class="section">
                     <div class="section-header">
-                        <h4>⚙️ User Preferences</h4>
-                        <div class="section-toggle" onclick="toggleSection('preferences-content')" title="Show/Hide Section">
-                            <span class="toggle-icon">−</span>
+                        <h4>Lookup Chat</h4>
+                    </div>
+                    <div id="chat-content" class="section-content">
+                        <div class="chat-container">
+                            <label>Select Model</label>
+                            <div class="input-field">
+                                <select id="model-select">
+                                    <option value="z-ai/glm-4.5-air:free">Z.AI: GLM 4.5 Air (free)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="chat-log" class="data-container"></div>
+                        <div class="chat-input-container">
+                            <input type="text" id="chat-input" placeholder="Type your message..." autocomplete="off">
+                            <button id="send-button" class="btn waves-effect waves-light">Send</button>
                         </div>
                     </div>
-                    <div id="preferences-content" class="section-content">
-                        <div class="row">
-                            <div class="col s12 m6">
-                                <div class="preference-group">
-                                    <div id="preferences-weather" style="margin-top:10px;"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="col s12 m6">
-                                <div class="preference-group">
-                                    <h5>📰 News & Trends</h5>
-                                    <p><strong>Current Settings:</strong></p>
-                                    <p>Country: <span id="currentNewsCountry">US</span></p>
-                                    <p>Language: <span id="currentNewsLanguage">English</span></p>
-                                    <p class="preference-info">These settings are automatically saved when you change them in the News section.</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col s12 m6">
-                                <div class="preference-group">
-                                    <h5>📊 Finance Watchlist</h5>
-                                    <p><strong>Current Watchlist:</strong></p>
-                                    <div id="preferencesWatchlist" class="watchlist-display">
-                                        <p>No stocks in watchlist</p>
-                                    </div>
-                                    <p class="preference-info">Your watchlist is automatically saved when you add or remove stocks.</p>
-                                </div>
-                            </div>
-                                
-                            <div class="col s12 m6">
-                                <div class="preference-group">
-                                    <h5>🎨 Theme</h5>
-                                    <p><strong>Current Theme:</strong> <span id="currentTheme">Light</span></p>
-                                    <button class="btn waves-effect waves-light" onclick="toggleTheme()">Toggle Theme</button>
-                                    <p class="preference-info">Your theme preference is automatically saved.</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col s12">
-                                <div class="preference-group">
-                                    <h5>Data Management</h5>
-                                    <button class="btn waves-effect waves-light red" onclick="clearAllPreferences()">Reset All Settings</button>
-                                    <button class="btn-small waves-effect waves-light" onclick="resetCookieConsent()" style="margin-left: 10px;">🍪 Reset Cookies</button>
-                                    <p class="preference-info">This will clear all your saved preferences including location, watchlist, theme, and other settings. This action cannot be undone.</p>
-                                </div>
-                            </div>
+                    <!-- Simple Queries -->
+                    <div class="row">
+                        <div class="col s12">
+                            <p style="font-style: italic; color: #9e9e9e; font-size: 0.85em; text-align: left; margin-top: 20px; margin-bottom: 0;">
+                                Simple queries default to using DuckDuckGo Instant Answer API.
+                            </p>
                         </div>
                     </div>
                 </section>
-            </div>
-        </div>
-
-        <div class="card weather-summary">
-            <div class="card-header" style="display: flex; align-items: center;">
-                <h5 style="flex: 1 1 auto; margin: 0;">🌤️ Weather Update</h5>
-                <button onclick="showLocationModal()" class="btn-small waves-effect waves-light" style="margin-left: 10px; font-size: 0.8em;">📍 Set Location</button>
-                <button onclick="updateHeaderWeather(); updateSummaryWeather();" class="btn-small waves-effect waves-light" style="margin-left: 10px; font-size: 0.8em;">🔄 Update Weather</button>
-            </div>
-            <div class="weather-info">
-                <div class="weather-location"></div>
-                <div class="weather-updated"></div>
-                <p class="weather-condition"></p>
-                <p class="weather-temp"></p>
-                <p class="weather-feelslike"></p>
-                <p class="weather-humidity"></p>
-                <p class="weather-wind"></p>
             </div>
         </div>
         <!-- Cookie/Privacy Notification Banner -->

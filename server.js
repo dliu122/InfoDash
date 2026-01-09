@@ -70,8 +70,8 @@ function isCacheStale(timestamp) {
 const app = express();
 const port = process.env.PORT || 3000;
 
-//Cloudfront proxy trust
-app.set('trust proxy', true);
+//Cloudfront proxy trust, comment out if not using CloudFront
+//app.set('trust proxy', true);
 
 // Detect CloudFront HTTPS termination
 app.use((req, res, next) => {
@@ -1397,7 +1397,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     }
     try {
         // console.log('Chat API: Received request');
-        const { messages, model = 'deepseek/deepseek-r1:free' } = req.body;
+        const { messages, model = 'z-ai/glm-4.5-air:free' } = req.body;
         
         // console.log('Chat API: Request body parsed, model:', model);
         // console.log('Chat API: Messages count:', messages?.length || 0);
@@ -1440,7 +1440,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 // Update lookup endpoint to use selected model
 app.post('/api/lookup', async (req, res) => {
     try {
-        const { query, model = 'deepseek/deepseek-r1:free' } = req.body;
+        const { query, model = 'z-ai/glm-4.5-air:free' } = req.body;
         if (!query) {
             return res.status(400).json({ error: 'Query is required' });
         }

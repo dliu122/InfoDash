@@ -478,7 +478,7 @@ async function generateSummary(sectionData) {
                 console.log('generateSummary: Starting AI generation...');
                 console.log('Generating summary with data:', sectionData);
 
-                const selectedModel = document.getElementById('model-select')?.value || 'deepseek/deepseek-chat-v3-0324:free';
+                const selectedModel = document.getElementById('model-select')?.value || 'z-ai/glm-4.5-air:free';
 
                 // Prepare the data for AI analysis
                 const analysisPrompt = createAnalysisPrompt(sectionData);
