@@ -816,7 +816,7 @@ class AutomatedSummaryGenerator {
         // Market closed if it's a weekend or a holiday/after-hours
         const isMarketClosed = !isMarketOpenFlag;
         const analysisPrompt = this.createAutomatedAnalysisPrompt(sectionData, isWeekend, isMarketClosed);
-        const selectedModel = 'z-ai/glm-4.5-air:free';
+        const selectedModel = 'openrouter/owl-alpha';
         const maxRetries = 3;
         let lastError = null;
 
@@ -1351,9 +1351,10 @@ async function callOpenRouterWithRetry(options, retries = 2) {
     // Fallback models to try if primary model fails
     const fallbackModels = [
         options.model, // Try the requested model first
+        'openai/gpt-oss-120b:free',
         'openai/gpt-oss-20b:free',
-        'meta-llama/llama-3.3-70b-instruct:free',
-        'qwen/qwen3-235b-a22b:free'
+        'nvidia/nemotron-nano-9b-v2:free',
+        'openrouter/free'
     ];
     
     // Remove duplicates in case the requested model is already in fallback list
@@ -1397,7 +1398,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     }
     try {
         // console.log('Chat API: Received request');
-        const { messages, model = 'z-ai/glm-4.5-air:free' } = req.body;
+        const { messages, model = 'openrouter/owl-alpha' } = req.body;
         
         // console.log('Chat API: Request body parsed, model:', model);
         // console.log('Chat API: Messages count:', messages?.length || 0);
@@ -1440,7 +1441,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 // Update lookup endpoint to use selected model
 app.post('/api/lookup', async (req, res) => {
     try {
-        const { query, model = 'z-ai/glm-4.5-air:free' } = req.body;
+        const { query, model = 'openrouter/owl-alpha' } = req.body;
         if (!query) {
             return res.status(400).json({ error: 'Query is required' });
         }
