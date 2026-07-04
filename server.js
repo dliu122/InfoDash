@@ -806,7 +806,7 @@ class AutomatedSummaryGenerator {
         }
     }
 
-    // Generate AI summary for automated generation, with retry logic
+    // Generate AI summary for automated generation, with retry logic and model fallback
     async generateAutomatedSummary(sectionData) {
         // Use isMarketOpen() to check for US market holidays and after-hours
         const isMarketOpenFlag = typeof isMarketOpen === 'function' ? isMarketOpen() : false;
@@ -816,54 +816,46 @@ class AutomatedSummaryGenerator {
         // Market closed if it's a weekend or a holiday/after-hours
         const isMarketClosed = !isMarketOpenFlag;
         const analysisPrompt = this.createAutomatedAnalysisPrompt(sectionData, isWeekend, isMarketClosed);
-        const selectedModel = 'openrouter/owl-alpha';
-        const maxRetries = 3;
+        const selectedModel = 'nvidia/nemotron-3-nano-30b-a3b:free'; // current most stable uptime free openrouter model
+        const maxRetries = 3; // 3 retries after the initial attempt
         let lastError = null;
 
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                const response = await openai.chat.completions.create({
-                    model: selectedModel,
-                    messages: [
-                        {
-                            role: 'system',
-                            content: `You are a data analyst specializing in creating clear, concise summaries of current news, trends, and market data.
-                            CRITICAL INSTRUCTIONS:
-                            - Only report the specific data provided. Do not infer, speculate, or add context from outside knowledge.
-                            - Act as a market predictor and future current events predictor (except for Info Genie section).
-                            - For percentage changes: positive = "up/gaining/rose", negative = "down/declining/fell"
-                            - Use "slight movement" for changes between -1% and +1%
-                            - Use dramatic terms like "surged/plunged" only for changes > ±10%
-                            - Refer to performance as "today's trading" or "current session"
-                            - Maintain professional, neutral, fact-based tone.`
-                        },
-                        {
-                            role: 'user',
-                            content: analysisPrompt
-                        }
-                    ],
-                    max_tokens: 5000
-                });
+        try {
+            const response = await callOpenRouterWithRetry({
+                model: selectedModel,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are a data analyst specializing in creating clear, concise summaries of current news, trends, and market data.
+                        CRITICAL INSTRUCTIONS:
+                        - Only report the specific data provided. Do not infer, speculate, or add context from outside knowledge.
+                        - Act as a market predictor and future current events predictor (except for Info Genie section).
+                        - For percentage changes: positive = "up/gaining/rose", negative = "down/declining/fell"
+                        - Use "slight movement" for changes between -1% and +1%
+                        - Use dramatic terms like "surged/plunged" only for changes > ±10%
+                        - Refer to performance as "today's trading" or "current session"
+                        - Maintain professional, neutral, fact-based tone.`
+                    },
+                    {
+                        role: 'user',
+                        content: analysisPrompt
+                    }
+                ],
+                max_tokens: 5000
+            }, maxRetries);
 
-                if (!response?.choices?.[0]?.message?.content) {
-                    console.error(`AI did not return any content (attempt ${attempt})`, response);
-                    lastError = new Error('AI did not return any content');
-                    // Try again if not last attempt
-                    continue;
-                }
-                
-                return response.choices[0].message.content;
-            } catch (error) {
-                lastError = error;
-                console.error(`Error generating automated summary (attempt ${attempt}):`, error);
-                // Wait a bit before retrying, except after last attempt
-                if (attempt < maxRetries) {
-                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-                }
+            if (!response?.choices?.[0]?.message?.content) {
+                lastError = new Error('AI did not return any content');
+                console.error('AI did not return any content for automated summary generation', response);
+                return null;
             }
+
+            return response.choices[0].message.content;
+        } catch (error) {
+            lastError = error;
+            console.error(`Error generating automated summary after ${maxRetries} retries:`, error);
+            return null;
         }
-        // If we get here, all attempts failed
-        return null;
     }
 
     // Create analysis prompt for automated generation
@@ -1351,9 +1343,13 @@ async function callOpenRouterWithRetry(options, retries = 2) {
     // Fallback models to try if primary model fails
     const fallbackModels = [
         options.model, // Try the requested model first
-        'openai/gpt-oss-120b:free',
-        'openai/gpt-oss-20b:free',
         'nvidia/nemotron-nano-9b-v2:free',
+        'openai/gpt-oss-20b:free',
+        'openai/gpt-oss-120b:free',
+        'liquid/lfm-2.5-1.2b-instruct:free',
+        'nousresearch/hermes-3-llama-3.1-405b:free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
         'openrouter/free'
     ];
     
@@ -1398,7 +1394,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     }
     try {
         // console.log('Chat API: Received request');
-        const { messages, model = 'openrouter/owl-alpha' } = req.body;
+        const { messages, model = 'nvidia/nemotron-3-nano-30b-a3b:free' } = req.body;
         
         // console.log('Chat API: Request body parsed, model:', model);
         // console.log('Chat API: Messages count:', messages?.length || 0);
@@ -1441,7 +1437,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 // Update lookup endpoint to use selected model
 app.post('/api/lookup', async (req, res) => {
     try {
-        const { query, model = 'openrouter/owl-alpha' } = req.body;
+        const { query, model = 'nvidia/nemotron-3-nano-30b-a3b:free' } = req.body;
         if (!query) {
             return res.status(400).json({ error: 'Query is required' });
         }

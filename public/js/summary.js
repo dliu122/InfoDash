@@ -478,7 +478,7 @@ async function generateSummary(sectionData) {
                 console.log('generateSummary: Starting AI generation...');
                 console.log('Generating summary with data:', sectionData);
 
-                const selectedModel = document.getElementById('model-select')?.value || 'openrouter/owl-alpha';
+                const selectedModel = document.getElementById('model-select')?.value || 'nvidia/nemotron-3-nano-30b-a3b:free';
 
                 // Prepare the data for AI analysis
                 const analysisPrompt = createAnalysisPrompt(sectionData);
