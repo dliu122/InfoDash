@@ -816,7 +816,7 @@ class AutomatedSummaryGenerator {
         // Market closed if it's a weekend or a holiday/after-hours
         const isMarketClosed = !isMarketOpenFlag;
         const analysisPrompt = this.createAutomatedAnalysisPrompt(sectionData, isWeekend, isMarketClosed);
-        const selectedModel = 'nvidia/nemotron-3-nano-30b-a3b:free'; // current most stable uptime free openrouter model
+        const selectedModel = 'poolside/laguna-s-2.1:free'; // current most stable uptime free openrouter model
         const maxRetries = 3; // 3 retries after the initial attempt
         let lastError = null;
 
@@ -1339,17 +1339,15 @@ app.get('/api/googlemaps/script', (req, res) => {
 });
 
 // Helper function for retrying OpenRouter API calls with delay and model fallback
-async function callOpenRouterWithRetry(options, retries = 2) {
+async function callOpenRouterWithRetry(options, retries = 6) {
     // Fallback models to try if primary model fails
     const fallbackModels = [
         options.model, // Try the requested model first
-        'nvidia/nemotron-nano-9b-v2:free',
-        'openai/gpt-oss-20b:free',
-        'openai/gpt-oss-120b:free',
-        'liquid/lfm-2.5-1.2b-instruct:free',
-        'nousresearch/hermes-3-llama-3.1-405b:free',
-        'meta-llama/llama-3.3-70b-instruct:free',
-        'qwen/qwen3-next-80b-a3b-instruct:free',
+        'poolside/laguna-s-2.1:free',
+        'nvidia/nemotron-3-ultra-550b-a55b:free',
+        'qwen/qwen3.8-27b:free',
+        'liquid/lfm-2.5-2.6b:free',
+        'cohere/north-mini-code:free',
         'openrouter/free'
     ];
     
@@ -1394,7 +1392,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     }
     try {
         // console.log('Chat API: Received request');
-        const { messages, model = 'nvidia/nemotron-3-nano-30b-a3b:free' } = req.body;
+        const { messages, model = 'poolside/laguna-s-2.1:free' } = req.body;
         
         // console.log('Chat API: Request body parsed, model:', model);
         // console.log('Chat API: Messages count:', messages?.length || 0);
@@ -1437,7 +1435,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 // Update lookup endpoint to use selected model
 app.post('/api/lookup', async (req, res) => {
     try {
-        const { query, model = 'nvidia/nemotron-3-nano-30b-a3b:free' } = req.body;
+        const { query, model = 'poolside/laguna-s-2.1:free' } = req.body;
         if (!query) {
             return res.status(400).json({ error: 'Query is required' });
         }
